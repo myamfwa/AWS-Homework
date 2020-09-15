@@ -38,13 +38,6 @@ def get_slots(intent_request):
     # A True results is returned if age or amount are valid
     return build_validation_result(True, None, None)
 
-### Dialog Actions Helper Functions ###
-def get_slots(intent_request):
-    """
-    Fetch all the slots and their values from the current intent.
-    """
-    return intent_request["currentIntent"]["slots"]
-
 def elicit_slot(session_attributes, intent_name, slots, slot_to_elicit, message):
     """
     Defines an elicit slot type response.
@@ -91,21 +84,6 @@ def close(session_attributes, fulfillment_state, message):
 
 
 ### Intents Handlers ###
-def recommend_portfolio(intent_request):
-    """
-    Performs dialog management and fulfillment for recommending a portfolio.
-    """
-
-    # Get the name of the current intent
- 
-    first_name = get_slots(intent_request)["firstName"]
-    age = get_slots(intent_request)["age"]
-    investment_amount = get_slots(intent_request)["investmentAmount"]
-    risk_level = get_slots(intent_request)["riskLevel"]
-    source = intent_request["invocationSource"]
-
-
-    if source == "DialogCodeHook":
         # Perform basic validation on the supplied input slots.
         # Use the elicitSlot dialog action to re-prompt
         # for the first violation detected.
@@ -121,11 +99,18 @@ def validate_data(age, investment_amount, first_name, intent_request):
     if age is not None:
         age = parse_int(get_slots(intent_request)['age'])
         
-        if age < 64:
+        if age > 65:
             return build_validation_result(
                 False,
                 "age",
-                "You need be between the age 0 - 65 to use this service for investments, "
+                "You need be between the age 0 - 65 to use this service."
+            )
+
+        elif age < 0:
+            return build_validation_result(
+                False,
+                "age"
+                "Sorry {}, {} is not a valid age, please try again.".format(first_name, age),) 
             )
     
     # Validate the investment amount, should be equal to or greater than $5,000.00
@@ -135,7 +120,7 @@ def validate_data(age, investment_amount, first_name, intent_request):
         if investment_amount <= 4999:
             return build_validation_result(
                 False,
-                "investment_amount",
+                "investmentAmount",
                 "The initial investment needs to be greater than 5000 in order to use this service."
                 "please provide a different amount to invest."
             )
@@ -197,39 +182,23 @@ def recommend_portfolio(intent_request):
         return delegate(output_session_attributes, get_slots(intent_request))
 
     # Validate risk level and determine recommendation
-    if risk_level.upper() == "NONE":
+    if risk_level.upper() == "none":
          initial_recommendation = "100% bonds (AGG), 0% equities (SPY)"
     
-    elif risk_level.upper() == "VERY LOW":
+    elif risk_level.upper() == "minimal":
          initial_recommendation = "80% bonds (AGG), 20% equities (SPY)"
         
-    elif risk_level.upper()  == "LOW":
+    elif risk_level.upper()  == "low":
          initial_recommendation = "60% bonds (AGG), 40% equities (SPY)"
         
-    elif risk_level.upper()  == "MEDIUM":
+    elif risk_level.upper()  == "high":
          initial_recommendation = "40% bonds (AGG), 60% equities (SPY)"
     
-    elif risk_level.upper()  == "HIGH":
+    elif risk_level.upper()  == "maximum":
          initial_recommendation = "20% bonds (AGG), 80% equities (SPY)"
         
     else:
          initial_recommendation = "0% bonds (AGG), 100% equities (SPY)"
-
-    # Return a message with the initial recommendation based on the risk level.
-    return close(
-        intent_request["sessionAttributes"],
-        "Fulfilled",
-        {
-            "contentType": "PlainText",
-            "content": """Thank you for your information {};
-            based on your defined risk level "{}" with an investment of ${}, my recommendation is to choose an investment portfolio with {}
-            """.format(
-                first_name, risk_level, investment_amount, initial_recommendation
-            ),
-        },
-    )
-
-
 
     ### YOUR FINAL INVESTMENT RECOMMENDATION CODE ENDS HERE ###
 
